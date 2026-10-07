@@ -1,0 +1,26 @@
+Package: arborShinyReport
+Type: Package
+Title: Interactive Forest Inventory Report for 'arbor' QSM Data
+Version: 0.1.0
+Authors@R: person("Jean-Romain", "Roussel", email = "info@r-lidar.com", role = c("aut", "cre"))
+Description: An interactive 'shiny' report for forest inventories built from
+    quantitative structure models ('arbor' qsf objects).
+License: GPL (>= 3)
+Encoding: UTF-8
+Depends: R (>= 4.1.0)
+Imports:
+    arbor,
+    DT,
+    dplyr,
+    leaflet,
+    lidR,
+    plotly,
+    rgl,
+    scales,
+    sf,
+    shiny
+Suggests:
+    testthat (>= 3.0.0)
+Additional_repositories: https://r-lidar.r-universe.dev
+Config/testthat/edition: 3
+Config/roxygen2/version: 8.1.0
