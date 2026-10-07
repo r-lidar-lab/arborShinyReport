@@ -19,6 +19,8 @@ library(arborShinyReport)
 shiny_report(qsf, las)
 ```
 
+![](man/demo.gif)
+
 ## Note on AI
 
 For full transparency, this package was mostly (approximately 95%) generated with the assistance of AI, based on real code examples and feature descriptions provided as prompts.
