@@ -1,6 +1,6 @@
 # arborShinyReport
 
-Interactive forest inventory report (Shiny) for `arbor` QSM data.
+Interactive forest inventory report (Shiny) for `arbor`.
 
 ## Install
 
@@ -10,7 +10,7 @@ remotes::install_github("r-lidar-lab/arborShinyReport")
 
 ## Use
 
-First, run the `arbor` pipeline following the online [arbor book](https://r-lidar.github.io/arbor_book/). At the end of the pipeline, you should have a segmented point cloud (`las`) and a Quantitative Structure Model (`qsf`).
+First, run the `arbor` pipeline following the online [arbor book](https://r-lidar.github.io/arbor_book/). At the end of the pipeline, you should have a segmented point cloud (`las`) and a Quantitative Forest Model (`qsf`).
 
 Once you have these two objects:
 
