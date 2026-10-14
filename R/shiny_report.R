@@ -26,10 +26,10 @@
 #' las <- lidR::readLAS("trees.laz")
 #' sf::st_crs(las) <- 26917
 #' qsf <- arbor::qsf(las)
-#' shiny_report(qsf, las)
+#' arbor_report(qsf, las)
 #' }
 #' @export
-shiny_report <- function(qsf, las = NULL, target_epsg = 0) {
+arbor_report <- function(qsf, las = NULL, target_epsg = 0) {
 
   # ---- 1. Read inputs --------------------------------------------------------
   if (is.character(qsf)) {
