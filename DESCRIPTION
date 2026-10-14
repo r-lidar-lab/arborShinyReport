@@ -12,6 +12,7 @@ Imports:
     arbor,
     DT,
     dplyr,
+    htmlwidgets,
     leaflet,
     lidR,
     plotly,

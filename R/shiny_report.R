@@ -91,12 +91,13 @@ arbor_report <- function(qsf, las = NULL, target_epsg = 0) {
   novalid_pct <- 100 * sum(df$volume[df$Message == "No valid measure"]) / Vtot
   show_warning <- isTRUE(novalid_pct > 20)
 
-  # Slider limits, rounded outward so no tree is lost to step rounding
+  # Slider limits: start at 0 and end on a "pretty" value (>= max) so the
+  # graduations look clean; no tree is lost since the limits enclose the data
   slider_lim <- function(x) {
-    r <- range(x, na.rm = TRUE)
-    if (diff(r) == 0) r <- r + c(-0.5, 0.5)
-    step <- signif(diff(r) / 500, 2)
-    list(lim = c(floor(r[1] / step) * step, ceiling(r[2] / step) * step), step = step)
+    mx <- max(x, na.rm = TRUE)
+    if (!is.finite(mx) || mx <= 0) mx <- 1
+    top <- max(pretty(c(0, mx), n = 5))
+    list(lim = c(0, top), step = signif(top / 500, 2))
   }
   vol_s <- slider_lim(df$volume)
   dbh_s <- slider_lim(df$dbh_cm)
@@ -659,7 +660,7 @@ arbor_report <- function(qsf, las = NULL, target_epsg = 0) {
 
       w <- rgl::rglwidget()
       try(rgl::close3d(), silent = TRUE)
-      w
+      htmlwidgets::onRender(w, rgl_pan_js)
     })
 
     # ---- Exports ---------------------------------------------------------------------
@@ -676,3 +677,49 @@ arbor_report <- function(qsf, las = NULL, target_epsg = 0) {
 
   shinyApp(ui, server)
 }
+
+# Right-button drag pans the rgl scene (rgl's WebGL viewer has no pan mode).
+# Panning shifts the observer in eye space, which is applied after the
+# user (rotation) matrix, so it follows the screen axes.
+rgl_pan_js <- "
+function(el, x) {
+  var r = el.rglinstance;
+  if (!r || !r.canvas) return;
+  var canvas = r.canvas, panning = false, lx = 0, ly = 0;
+  var sub = function() { return r.getObj(r.scene.rootSubscene); };
+
+  canvas.addEventListener('contextmenu', function(e) { e.preventDefault(); });
+
+  var oldDown = canvas.onpointerdown;
+  canvas.onpointerdown = function(ev) {
+    if (ev.button === 2) {
+      panning = true; lx = ev.clientX; ly = ev.clientY;
+      canvas.setPointerCapture(ev.pointerId);
+      canvas.style.cursor = 'move';
+      ev.preventDefault();
+      return;
+    }
+    if (oldDown) oldDown.call(this, ev);
+  };
+
+  canvas.addEventListener('pointermove', function(ev) {
+    if (!panning) return;
+    var p = sub().par3d, rect = canvas.getBoundingClientRect(),
+        t = p.FOV === 0 ? 1 : Math.tan(p.FOV * Math.PI / 360),
+        k = 2 * t * p.zoom * p.observer[2] / rect.height;
+    p.observer[0] -= (ev.clientX - lx) * k;
+    p.observer[1] += (ev.clientY - ly) * k;
+    lx = ev.clientX; ly = ev.clientY;
+    r.drawScene();
+  });
+
+  var stop = function(ev) {
+    if (!panning) return;
+    panning = false;
+    canvas.style.cursor = '';
+    try { canvas.releasePointerCapture(ev.pointerId); } catch (e) {}
+  };
+  canvas.addEventListener('pointerup', stop);
+  canvas.addEventListener('pointercancel', stop);
+}
+"
