@@ -21,8 +21,8 @@ shiny_report(qsf, las)
 
 ![](man/demo.gif)
 
-## Note on AI
+## Transparency on AI usage
 
-For full transparency, this package was mostly (approximately 95%) generated with the assistance of AI, based on real code examples and feature descriptions provided as prompts.
+For full transparency, this package was mostly generated with the assistance of AI, based on real code examples and feature descriptions provided as prompts.
 
 The package consists largely of repetitive Shiny application code and documented interface logic. AI tools were used to generate much of this implementation, while the underlying requirements, examples, and functionality were prompted by the author.

@@ -5,8 +5,10 @@
 #' and renders it in the WebGL (rgl) viewer.
 #'
 #' The "Height vs Diameter" plot shows the allometric fit
-#' \eqn{H = \exp(b_0) (DBH \times 100)^{b_1}} (see [fit_height_dbh()]) with its
-#' R2 and RMSE. The fit is recomputed on the trees that pass the current
+#' \eqn{H = a (DBH \times 100)^{b}} (see [fit_height_dbh()]) with its
+#' R2 and RMSE. The "Volume vs Diameter" plot likewise shows
+#' \eqn{V = a (DBH \times 100)^{b}} (see [fit_volume_dbh()]). Both fits use only
+#' trees with status "OK" and are recomputed on the trees that pass the current
 #' filters.
 #'
 #' @param qsf a `qsf` object (`arbor::qsf_read()`), or a path to a `.qsf` file
@@ -181,10 +183,13 @@ shiny_report <- function(qsf, las = NULL, target_epsg = 0) {
                    tabPanel("Allometrics",
                             p("Click a point (or a table row) to select that tree everywhere."),
                             tabsetPanel(
-                              tabPanel("Volume vs Diameter", plotlyOutput("plot_vol", height = 460)),
+                              tabPanel("Volume vs Diameter",
+                                       p(class = "help-block",
+                                         "Fit: V = a \u00D7 DBH^b only on trees with valid QSM"),
+                                       plotlyOutput("plot_vol", height = 460)),
                               tabPanel("Height vs Diameter",
                                        p(class = "help-block",
-                                         "Fit: H = exp(b0) \u00D7 DBH^b1 only on trees with valid QSM"),
+                                         "Fit: H = a \u00D7 DBH^b only on trees with valid QSM"),
                                        plotlyOutput("plot_height", height = 460)),
                               tabPanel("Data table", br(), DTOutput("tbl"))
                             )
@@ -425,7 +430,8 @@ shiny_report <- function(qsf, las = NULL, target_epsg = 0) {
 
     # Trace order matters for click handling: the clickable markers are trace 0,
     # then the (optional) fit line, then the selection overlay.
-    scatter_plot <- function(d, xcol, ycol, xlab, ylab, source, sel, fit = NULL) {
+    scatter_plot <- function(d, xcol, ycol, xlab, ylab, source, sel, fit = NULL,
+                             fit_label = NULL) {
       need_trees(d)
       p <- plot_ly(source = source) |>
         add_markers(x = d[[xcol]], y = d[[ycol]], key = d$name,
@@ -445,9 +451,7 @@ shiny_report <- function(qsf, las = NULL, target_epsg = 0) {
           showarrow = FALSE, bgcolor = "rgba(255,255,255,0.85)",
           bordercolor = "#e3e3df", borderwidth = 1, borderpad = 6,
           font = list(size = 12, color = ink),
-          text = sprintf(paste0("<b>H = exp(%.3f) \u00D7 DBH<sup>%.3f</sup></b><br>",
-                                "R\u00B2 = %.3f<br>RMSE = %.2f m<br>n = %d"),
-                         fit$b0, fit$b1, fit$r2, fit$rmse, fit$n)))
+          text = fit_label(fit)))
       }
 
       p |>
@@ -479,18 +483,36 @@ shiny_report <- function(qsf, las = NULL, target_epsg = 0) {
     }
     # (observers are created after `contrib` is defined, see below)
 
-    # Height ~ DBH allometry: H = exp(b0) * (dbh * 100)^b1, on the filtered trees
+    # Height ~ DBH allometry: H = a * (dbh * 100)^b, on the filtered trees
     height_fit <- reactive({
       d <- trees()
       d = d[d$Message == "OK",]
       fit_height_dbh(d$dbh, d$height)
     })
 
+    # Volume ~ DBH allometry: V = a * (dbh * 100)^b, on the filtered OK trees
+    volume_fit <- reactive({
+      d <- trees()
+      d <- d[d$Message == "OK", ]
+      fit_volume_dbh(d$dbh, d$volume)
+    })
+
+    height_label <- function(f)
+      sprintf(paste0("<b>H = %.3g \u00D7 DBH<sup>%.3f</sup></b><br>",
+                     "R\u00B2 = %.3f<br>RMSE = %.2f m<br>n = %d"),
+              f$a, f$b, f$r2, f$rmse, f$n)
+
+    volume_label <- function(f)
+      sprintf(paste0("<b>V = %.3g \u00D7 DBH<sup>%.3f</sup></b><br>",
+                     "R\u00B2 = %.3f<br>RMSE = %.3f m\u00B3<br>n = %d"),
+              f$a, f$b, f$r2, f$rmse, f$n)
+
     output$plot_vol <- renderPlotly(
-      scatter_plot(trees(), "dbh_cm", "volume", "Diameter (cm)", "Volume (m\u00B3)", "vol", selected()))
+      scatter_plot(trees(), "dbh_cm", "volume", "Diameter (cm)", "Volume (m\u00B3)", "vol", selected(),
+                   fit = volume_fit(), fit_label = volume_label))
     output$plot_height <- renderPlotly(
       scatter_plot(trees(), "dbh_cm", "height", "Diameter (cm)", "Height (m)", "height", selected(),
-                   fit = height_fit()))
+                   fit = height_fit(), fit_label = height_label))
 
     # ---- Distributions --------------------------------------------------------
     hist_plot <- function(x, xlab) {
